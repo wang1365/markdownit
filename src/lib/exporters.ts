@@ -114,8 +114,9 @@ export function exportPdf() {
 }
 
 export async function exportGoogleDocs(title: string, markdown: string, html: string) {
-  await copyRichDocument(markdown, html);
-  window.open(`https://docs.new?title=${encodeURIComponent(title)}`, "_blank", "noopener,noreferrer");
+  const accessToken = await requestGoogleDriveAccess();
+  const document = await createGoogleDocument(title, markdown, html, accessToken);
+  window.open(document.webViewLink ?? `https://docs.google.com/document/d/${document.id}/edit`, "_blank", "noopener,noreferrer");
 }
 
 export async function exportNotion(markdown: string) {
@@ -123,19 +124,153 @@ export async function exportNotion(markdown: string) {
   window.open("https://www.notion.so/import", "_blank", "noopener,noreferrer");
 }
 
-async function copyRichDocument(markdown: string, html: string) {
-  const fullHtml = `<!doctype html><html><body>${html}</body></html>`;
-  if ("ClipboardItem" in window) {
-    await navigator.clipboard.write([
-      new ClipboardItem({
-        "text/html": new Blob([fullHtml], { type: "text/html" }),
-        "text/plain": new Blob([markdown], { type: "text/plain" })
-      })
-    ]);
-    return;
+type GoogleTokenResponse = {
+  access_token?: string;
+  error?: string;
+  error_description?: string;
+};
+
+type GoogleTokenClient = {
+  requestAccessToken: (options?: { prompt?: string }) => void;
+};
+
+type GoogleDocumentResponse = {
+  id: string;
+  name?: string;
+  webViewLink?: string;
+};
+
+declare global {
+  interface Window {
+    google?: {
+      accounts?: {
+        oauth2?: {
+          initTokenClient: (config: {
+            client_id: string;
+            scope: string;
+            callback: (response: GoogleTokenResponse) => void;
+            error_callback?: (error: unknown) => void;
+          }) => GoogleTokenClient;
+        };
+      };
+    };
+  }
+}
+
+async function requestGoogleDriveAccess() {
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  if (!clientId) {
+    throw new Error("Missing NEXT_PUBLIC_GOOGLE_CLIENT_ID. Configure it in Vercel and your local .env file.");
   }
 
-  await navigator.clipboard.writeText(markdown);
+  await loadGoogleIdentityScript();
+
+  return new Promise<string>((resolve, reject) => {
+    const oauth = window.google?.accounts?.oauth2;
+    if (!oauth) {
+      reject(new Error("Google authorization library is unavailable."));
+      return;
+    }
+
+    const client = oauth.initTokenClient({
+      client_id: clientId,
+      scope: "https://www.googleapis.com/auth/drive.file",
+      callback: (response) => {
+        if (response.error) {
+          reject(new Error(response.error_description || response.error));
+          return;
+        }
+
+        if (!response.access_token) {
+          reject(new Error("Google authorization did not return an access token."));
+          return;
+        }
+
+        resolve(response.access_token);
+      },
+      error_callback: reject
+    });
+
+    client.requestAccessToken({ prompt: "consent" });
+  });
+}
+
+function loadGoogleIdentityScript() {
+  if (window.google?.accounts?.oauth2) return Promise.resolve();
+
+  return new Promise<void>((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>('script[src="https://accounts.google.com/gsi/client"]');
+    if (existing) {
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => reject(new Error("Failed to load Google authorization library.")), { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Failed to load Google authorization library."));
+    document.head.appendChild(script);
+  });
+}
+
+async function createGoogleDocument(title: string, markdown: string, html: string, accessToken: string): Promise<GoogleDocumentResponse> {
+  const boundary = `markdownit_${crypto.randomUUID()}`;
+  const metadata = {
+    name: safeFilename(title),
+    mimeType: "application/vnd.google-apps.document"
+  };
+  const body = new Blob(
+    [
+      `--${boundary}\r\n`,
+      "Content-Type: application/json; charset=UTF-8\r\n\r\n",
+      JSON.stringify(metadata),
+      `\r\n--${boundary}\r\n`,
+      "Content-Type: text/html; charset=UTF-8\r\n\r\n",
+      buildGoogleDocsHtml(title, markdown, html),
+      `\r\n--${boundary}--`
+    ],
+    { type: `multipart/related; boundary=${boundary}` }
+  );
+
+  const response = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    },
+    body
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(`Google Docs export failed: ${message || response.statusText}`);
+  }
+
+  return response.json() as Promise<GoogleDocumentResponse>;
+}
+
+function buildGoogleDocsHtml(title: string, markdown: string, html: string) {
+  const plainText = escapeHtml(markdown);
+  return [
+    "<!doctype html>",
+    '<html><head><meta charset="utf-8">',
+    `<title>${escapeHtml(title)}</title>`,
+    "<style>",
+    "body{font-family:Arial,'Microsoft YaHei',sans-serif;color:#101820;line-height:1.7;}",
+    "blockquote{border-left:4px solid #287b78;background:#eef4ef;margin:16px 0;padding:10px 16px;}",
+    "pre{background:#101820;color:#fff8e7;padding:14px;white-space:pre-wrap;}",
+    "code{font-family:Consolas,monospace;background:#efe8d8;padding:1px 4px;}",
+    "table{border-collapse:collapse;width:100%;}td,th{border:1px solid #d8d0c2;padding:6px 8px;}",
+    "</style></head><body>",
+    html || `<pre>${plainText}</pre>`,
+    "</body></html>"
+  ].join("");
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 function nodeToDocx(node: Content): Array<Paragraph | Table> {

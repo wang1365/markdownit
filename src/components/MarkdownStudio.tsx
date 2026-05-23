@@ -1,10 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Script from "next/script";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { markdown } from "@codemirror/lang-markdown";
 import { oneDark } from "@codemirror/theme-one-dark";
-import type { EditorView } from "@codemirror/view";
+import { keymap, type EditorView } from "@codemirror/view";
 import {
   Bold,
   Code2,
@@ -12,18 +13,20 @@ import {
   ExternalLink,
   FileDown,
   FilePlus2,
-  Focus,
   Heading1,
   Heading2,
+  Heading3,
+  Heading4,
   Import,
   Italic,
   Languages,
   Link,
   List,
   ListOrdered,
+  Maximize2,
+  Minimize2,
   PanelLeftClose,
   PanelLeftOpen,
-  PanelRightOpen,
   Quote,
   Save,
   Table2,
@@ -47,6 +50,24 @@ const themes = [
 ] as const;
 
 type ThemeId = (typeof themes)[number]["id"];
+type MarkdownTool = "h1" | "h2" | "h3" | "h4" | "bold" | "italic" | "quote" | "bullet" | "ordered" | "link" | "code" | "table";
+
+const toolShortcuts: Record<MarkdownTool, string> = {
+  h1: "Ctrl/Cmd+Alt+1",
+  h2: "Ctrl/Cmd+Alt+2",
+  h3: "Ctrl/Cmd+Alt+3",
+  h4: "Ctrl/Cmd+Alt+4",
+  bold: "Ctrl/Cmd+B",
+  italic: "Ctrl/Cmd+I",
+  quote: "Ctrl/Cmd+Shift+.",
+  bullet: "Ctrl/Cmd+Shift+8",
+  ordered: "Ctrl/Cmd+Shift+7",
+  link: "Ctrl/Cmd+K",
+  code: "Ctrl/Cmd+Alt+C",
+  table: "Ctrl/Cmd+Alt+T"
+};
+
+const focusShortcut = "Ctrl/Cmd+Alt+F";
 
 type Props = {
   locale: Locale;
@@ -105,6 +126,20 @@ export function MarkdownStudio({ locale, dictionary }: Props) {
     };
   }, [activeDocument?.markdown]);
 
+  useEffect(() => {
+    if (!focusMode) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setFocusMode(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [focusMode]);
+
   const updateActive = useCallback(
     (updates: Partial<StoredDocument>) => {
       if (!activeDocument) return;
@@ -161,8 +196,12 @@ export function MarkdownStudio({ locale, dictionary }: Props) {
 
   const sendToGoogleDocs = async () => {
     if (!activeDocument) return;
-    await exportGoogleDocs(activeDocument.title, activeDocument.markdown, previewHtml);
-    setNotice(dictionary.app.copiedGoogle);
+    try {
+      await exportGoogleDocs(activeDocument.title, activeDocument.markdown, previewHtml);
+      setNotice(dictionary.app.copiedGoogle);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Google Docs export failed.");
+    }
   };
 
   const sendToNotion = async () => {
@@ -171,31 +210,67 @@ export function MarkdownStudio({ locale, dictionary }: Props) {
     setNotice(dictionary.app.copiedNotion);
   };
 
-  const applyMarkdownTool = (tool: MarkdownTool) => {
-    if (!activeDocument) return;
+  const applyMarkdownTool = useCallback(
+    (tool: MarkdownTool, viewOverride?: EditorView) => {
+      if (!activeDocument) return false;
 
-    const view = editorView;
-    const markdown = activeDocument.markdown;
-    const selection = view?.state.selection.main;
-    const from = selection?.from ?? markdown.length;
-    const to = selection?.to ?? markdown.length;
-    const selected = markdown.slice(from, to);
-    const edit = createMarkdownEdit(tool, markdown, from, to, selected);
+      const view = viewOverride ?? editorView;
+      const markdown = activeDocument.markdown;
+      const selection = view?.state.selection.main;
+      const from = selection?.from ?? markdown.length;
+      const to = selection?.to ?? markdown.length;
+      const selected = markdown.slice(from, to);
+      const edit = createMarkdownEdit(tool, markdown, from, to, selected);
 
-    if (view) {
-      view.dispatch({
-        changes: { from: edit.from, to: edit.to, insert: edit.insert },
-        selection: { anchor: edit.cursor }
-      });
-      view.focus();
-      return;
-    }
+      if (view) {
+        view.dispatch({
+          changes: { from: edit.from, to: edit.to, insert: edit.insert },
+          selection: { anchor: edit.cursor }
+        });
+        view.focus();
+        return true;
+      }
 
-    updateActive({ markdown: `${markdown.slice(0, edit.from)}${edit.insert}${markdown.slice(edit.to)}` });
-  };
+      updateActive({ markdown: `${markdown.slice(0, edit.from)}${edit.insert}${markdown.slice(edit.to)}` });
+      return true;
+    },
+    [activeDocument, editorView, updateActive]
+  );
+
+  const editorExtensions = useMemo(() => {
+    const formattingKeys = keymap.of([
+      { key: "Mod-Alt-1", run: (view) => applyMarkdownTool("h1", view) },
+      { key: "Mod-Alt-2", run: (view) => applyMarkdownTool("h2", view) },
+      { key: "Mod-Alt-3", run: (view) => applyMarkdownTool("h3", view) },
+      { key: "Mod-Alt-4", run: (view) => applyMarkdownTool("h4", view) },
+      { key: "Mod-b", run: (view) => applyMarkdownTool("bold", view) },
+      { key: "Mod-i", run: (view) => applyMarkdownTool("italic", view) },
+      { key: "Mod-Shift-.", run: (view) => applyMarkdownTool("quote", view) },
+      { key: "Mod-Shift-8", run: (view) => applyMarkdownTool("bullet", view) },
+      { key: "Mod-Shift-7", run: (view) => applyMarkdownTool("ordered", view) },
+      { key: "Mod-k", run: (view) => applyMarkdownTool("link", view) },
+      { key: "Mod-Alt-c", run: (view) => applyMarkdownTool("code", view) },
+      { key: "Mod-Alt-t", run: (view) => applyMarkdownTool("table", view) },
+      {
+        key: "Mod-Alt-f",
+        run: () => {
+          setFocusMode((value) => !value);
+          return true;
+        }
+      }
+    ]);
+
+    return theme === "night" || theme === "contrast" ? [markdown(), formattingKeys, oneDark] : [markdown(), formattingKeys];
+  }, [applyMarkdownTool, theme]);
 
   return (
     <main className={`studio-shell ${focusMode ? "focus-mode" : ""} ${railCollapsed ? "rail-collapsed" : ""}`} data-theme={theme}>
+      <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" />
+      {focusMode ? (
+        <button className="focus-exit-button" onClick={() => setFocusMode(false)} title="Exit focus mode (Esc)" aria-label="Exit focus mode (Esc)">
+          <Minimize2 size={18} />
+        </button>
+      ) : null}
       <div className="studio-frame">
         <aside className="rail" aria-label={dictionary.app.documents}>
           <div className="brand-block">
@@ -292,8 +367,13 @@ export function MarkdownStudio({ locale, dictionary }: Props) {
               <button className="icon-button" onClick={removeDocument} title={dictionary.app.delete}>
                 <Trash2 size={17} />
               </button>
-              <button className="icon-button" onClick={() => setFocusMode((value) => !value)} title={dictionary.app.focus}>
-                {focusMode ? <PanelRightOpen size={17} /> : <Focus size={17} />}
+              <button
+                className="icon-button focus-toggle"
+                onClick={() => setFocusMode((value) => !value)}
+                title={`${focusMode ? "Exit focus mode" : dictionary.app.focus} (${focusShortcut})`}
+                aria-label={`${focusMode ? "Exit focus mode" : dictionary.app.focus} (${focusShortcut})`}
+              >
+                {focusMode ? <Minimize2 size={17} /> : <Maximize2 size={17} />}
               </button>
               <button className="text-button" onClick={() => activeDocument && downloadMarkdown(activeDocument.title, activeDocument.markdown)}>
                 <Save size={17} />
@@ -325,45 +405,48 @@ export function MarkdownStudio({ locale, dictionary }: Props) {
                 <div className="pane-header">
                   <span>{dictionary.app.editor}</span>
                   <div className="markdown-toolbar" aria-label="Markdown formatting toolbar">
-                    <button type="button" onClick={() => applyMarkdownTool("h1")} title="Heading 1">
-                      <Heading1 size={15} />
+                    <button type="button" onClick={() => applyMarkdownTool("h1")} title={`Heading 1 (${toolShortcuts.h1})`} aria-label={`Heading 1 (${toolShortcuts.h1})`}>
+                      <Heading1 size={14} />
                     </button>
-                    <button type="button" onClick={() => applyMarkdownTool("h2")} title="Heading 2">
-                      <Heading2 size={15} />
+                    <button type="button" onClick={() => applyMarkdownTool("h2")} title={`Heading 2 (${toolShortcuts.h2})`} aria-label={`Heading 2 (${toolShortcuts.h2})`}>
+                      <Heading2 size={14} />
                     </button>
-                    <button type="button" onClick={() => applyMarkdownTool("bold")} title="Bold">
-                      <Bold size={15} />
+                    <button type="button" onClick={() => applyMarkdownTool("h3")} title={`Heading 3 (${toolShortcuts.h3})`} aria-label={`Heading 3 (${toolShortcuts.h3})`}>
+                      <Heading3 size={14} />
                     </button>
-                    <button type="button" onClick={() => applyMarkdownTool("italic")} title="Italic">
-                      <Italic size={15} />
+                    <button type="button" onClick={() => applyMarkdownTool("h4")} title={`Heading 4 (${toolShortcuts.h4})`} aria-label={`Heading 4 (${toolShortcuts.h4})`}>
+                      <Heading4 size={14} />
                     </button>
-                    <button type="button" onClick={() => applyMarkdownTool("quote")} title="Quote">
-                      <Quote size={15} />
+                    <button type="button" onClick={() => applyMarkdownTool("bold")} title={`Bold (${toolShortcuts.bold})`} aria-label={`Bold (${toolShortcuts.bold})`}>
+                      <Bold size={14} />
                     </button>
-                    <button type="button" onClick={() => applyMarkdownTool("bullet")} title="Bulleted list">
-                      <List size={15} />
+                    <button type="button" onClick={() => applyMarkdownTool("italic")} title={`Italic (${toolShortcuts.italic})`} aria-label={`Italic (${toolShortcuts.italic})`}>
+                      <Italic size={14} />
                     </button>
-                    <button type="button" onClick={() => applyMarkdownTool("ordered")} title="Numbered list">
-                      <ListOrdered size={15} />
+                    <button type="button" onClick={() => applyMarkdownTool("quote")} title={`Quote (${toolShortcuts.quote})`} aria-label={`Quote (${toolShortcuts.quote})`}>
+                      <Quote size={14} />
                     </button>
-                    <button type="button" onClick={() => applyMarkdownTool("link")} title="Link">
-                      <Link size={15} />
+                    <button type="button" onClick={() => applyMarkdownTool("bullet")} title={`Bulleted list (${toolShortcuts.bullet})`} aria-label={`Bulleted list (${toolShortcuts.bullet})`}>
+                      <List size={14} />
                     </button>
-                    <button type="button" onClick={() => applyMarkdownTool("code")} title="Code block">
-                      <Code2 size={15} />
+                    <button type="button" onClick={() => applyMarkdownTool("ordered")} title={`Numbered list (${toolShortcuts.ordered})`} aria-label={`Numbered list (${toolShortcuts.ordered})`}>
+                      <ListOrdered size={14} />
                     </button>
-                    <button type="button" onClick={() => applyMarkdownTool("table")} title="Table">
-                      <Table2 size={15} />
+                    <button type="button" onClick={() => applyMarkdownTool("link")} title={`Link (${toolShortcuts.link})`} aria-label={`Link (${toolShortcuts.link})`}>
+                      <Link size={14} />
                     </button>
-                    <button className="pane-tool" onClick={() => setFocusMode((value) => !value)} title={dictionary.app.focus}>
-                      {focusMode ? <PanelRightOpen size={15} /> : <Focus size={15} />}
+                    <button type="button" onClick={() => applyMarkdownTool("code")} title={`Code block (${toolShortcuts.code})`} aria-label={`Code block (${toolShortcuts.code})`}>
+                      <Code2 size={14} />
+                    </button>
+                    <button type="button" onClick={() => applyMarkdownTool("table")} title={`Table (${toolShortcuts.table})`} aria-label={`Table (${toolShortcuts.table})`}>
+                      <Table2 size={14} />
                     </button>
                   </div>
                 </div>
                 <div className="editor-host">
                   <CodeMirror
                     value={activeDocument.markdown}
-                    extensions={theme === "night" || theme === "contrast" ? [markdown(), oneDark] : [markdown()]}
+                    extensions={editorExtensions}
                     basicSetup={{ lineNumbers: true, foldGutter: true }}
                     onCreateEditor={(view) => setEditorView(view)}
                     onChange={(value) => updateActive({ markdown: value })}
@@ -433,8 +516,6 @@ function documentSummary(markdown: string) {
   return summary ? summary.slice(0, 80) : "Empty document";
 }
 
-type MarkdownTool = "h1" | "h2" | "bold" | "italic" | "quote" | "bullet" | "ordered" | "link" | "code" | "table";
-
 type MarkdownEdit = {
   from: number;
   to: number;
@@ -454,6 +535,8 @@ function createMarkdownEdit(tool: MarkdownTool, markdown: string, from: number, 
 
   if (tool === "h1") return replaceLines(lineRange, block, (line) => setHeading(line, "#"));
   if (tool === "h2") return replaceLines(lineRange, block, (line) => setHeading(line, "##"));
+  if (tool === "h3") return replaceLines(lineRange, block, (line) => setHeading(line, "###"));
+  if (tool === "h4") return replaceLines(lineRange, block, (line) => setHeading(line, "####"));
   if (tool === "quote") return replaceLines(lineRange, block, (line) => togglePrefix(line, "> "));
   if (tool === "bullet") return replaceLines(lineRange, block, (line) => togglePrefix(line, "- "));
   return replaceLines(lineRange, block, (line, index) => setOrderedPrefix(line, index + 1));
@@ -520,7 +603,7 @@ function replaceLines(lineRange: { from: number; to: number }, block: string, tr
   };
 }
 
-function setHeading(line: string, marker: "#" | "##") {
+function setHeading(line: string, marker: string) {
   return `${marker} ${line.replace(/^#{1,6}\s+/, "")}`;
 }
 

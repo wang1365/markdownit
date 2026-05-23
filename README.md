@@ -33,3 +33,13 @@ NEXT_PUBLIC_GTM_ID=GTM-XXXXXXX
 ```
 
 If either value is omitted, that script is not injected.
+
+## Google Docs Export
+
+Direct Google Docs export uses Google Identity Services and the Google Drive API. Create an OAuth 2.0 Web Client in Google Cloud, add the deployed domain and local development origin to Authorized JavaScript origins, enable the Google Drive API, and set:
+
+```bash
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-oauth-client-id.apps.googleusercontent.com
+```
+
+The app requests the `drive.file` scope and creates a converted Google Docs document in the signed-in user's Drive.
