@@ -22,3 +22,14 @@ npm run build
 ## Deployment
 
 Deploy the private GitHub repository to Vercel and attach `markdownit.online` as the production domain.
+
+## Analytics
+
+Set these environment variables locally and in Vercel when analytics is ready:
+
+```bash
+NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
+NEXT_PUBLIC_GTM_ID=GTM-XXXXXXX
+```
+
+If either value is omitted, that script is not injected.

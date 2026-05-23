@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Analytics, GoogleTagManagerNoScript } from "@/components/Analytics";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getDirection, isLocale, localePath, locales, type Locale } from "@/i18n/config";
 
@@ -62,7 +63,11 @@ export default async function LocaleLayout({ children, params }: Props) {
 
   return (
     <html lang={locale} dir={getDirection(locale)} suppressHydrationWarning>
-      <body>{children}</body>
+      <body>
+        <GoogleTagManagerNoScript />
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
