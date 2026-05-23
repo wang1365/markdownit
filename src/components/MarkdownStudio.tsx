@@ -84,11 +84,13 @@ export function MarkdownStudio({ locale, dictionary }: Props) {
   const [theme, setTheme] = useState<ThemeId>("atelier");
   const [notice, setNotice] = useState("");
   const [editorView, setEditorView] = useState<EditorView | null>(null);
+  const [currentUrl, setCurrentUrl] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const activeDocument = documents.find((item) => item.id === activeId) ?? null;
   const wordCount = useMemo(() => countWords(activeDocument?.markdown ?? ""), [activeDocument?.markdown]);
   const slogan = useMemo(() => getSlogan(locale, dictionary.app.headline), [dictionary.app.headline, locale]);
+  const feedbackHref = useMemo(() => createFeedbackMailto(activeDocument?.title, currentUrl), [activeDocument?.title, currentUrl]);
 
   useEffect(() => {
     let mounted = true;
@@ -115,6 +117,7 @@ export function MarkdownStudio({ locale, dictionary }: Props) {
     if (savedTheme && themes.some((item) => item.id === savedTheme)) {
       setTheme(savedTheme as ThemeId);
     }
+    setCurrentUrl(window.location.href);
   }, []);
 
   useEffect(() => {
@@ -203,23 +206,6 @@ export function MarkdownStudio({ locale, dictionary }: Props) {
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Google Docs export failed.");
     }
-  };
-
-  const contactAuthor = () => {
-    const subject = encodeURIComponent("Markdownit Online feedback");
-    const body = encodeURIComponent(
-      [
-        "Hi,",
-        "",
-        "I have feedback about Markdownit Online:",
-        "",
-        `Document: ${activeDocument?.title ?? "Untitled"}`,
-        `Page: ${window.location.href}`,
-        "",
-        "Feedback:"
-      ].join("\n")
-    );
-    window.location.href = `mailto:${feedbackEmail}?subject=${subject}&body=${body}`;
   };
 
   const applyMarkdownTool = useCallback(
@@ -344,9 +330,9 @@ export function MarkdownStudio({ locale, dictionary }: Props) {
               <Logo />
               <h1>{slogan}</h1>
             </div>
-            <button className="icon-button rail-toggle hero-rail-toggle" onClick={() => setRailCollapsed((value) => !value)} title={railCollapsed ? "Expand sidebar" : "Collapse sidebar"}>
-              {railCollapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
-            </button>
+            <a className="icon-button hero-feedback" href={feedbackHref} title={getFeedbackLabel(locale)} aria-label={getFeedbackLabel(locale)}>
+              <Mail size={17} />
+            </a>
           </header>
 
           <div className="topbar">
@@ -358,7 +344,7 @@ export function MarkdownStudio({ locale, dictionary }: Props) {
               aria-label={dictionary.app.filenamePlaceholder}
             />
 
-            <div className="export-group">
+            <div className="export-group command-ribbon">
               <select className="select-control" value={locale} onChange={(event) => switchLocale(event.target.value)} aria-label={dictionary.app.language}>
                 {locales.map((item) => (
                   <option key={item} value={item}>
@@ -402,9 +388,6 @@ export function MarkdownStudio({ locale, dictionary }: Props) {
               <button className="text-button" onClick={sendToGoogleDocs}>
                 <GoogleIcon size={17} />
                 {dictionary.app.exportGoogle}
-              </button>
-              <button className="icon-button" onClick={contactAuthor} title={getFeedbackLabel(locale)} aria-label={getFeedbackLabel(locale)}>
-                <Mail size={17} />
               </button>
             </div>
           </div>
@@ -540,6 +523,24 @@ function getFeedbackLabel(locale: Locale) {
   };
 
   return labels[locale];
+}
+
+function createFeedbackMailto(title?: string, pageUrl?: string) {
+  const subject = encodeURIComponent("Markdownit Online feedback");
+  const body = encodeURIComponent(
+    [
+      "Hi,",
+      "",
+      "I have feedback about Markdownit Online:",
+      "",
+      `Document: ${title || "Untitled"}`,
+      `Page: ${pageUrl || "markdownit.online"}`,
+      "",
+      "Feedback:"
+    ].join("\n")
+  );
+
+  return `mailto:${feedbackEmail}?subject=${subject}&body=${body}`;
 }
 
 function GoogleIcon({ size = 17 }: { size?: number }) {

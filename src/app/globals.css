@@ -353,6 +353,22 @@ button {
   background: var(--paper-strong);
 }
 
+.hero-feedback {
+  flex: 0 0 auto;
+  border-color: rgba(40, 123, 120, 0.32);
+  background: #fffdf7;
+  color: var(--accent-2);
+  box-shadow: 0 8px 24px rgba(16, 24, 32, 0.08);
+}
+
+.hero-feedback:hover,
+.hero-feedback:focus-visible {
+  border-color: var(--accent-2);
+  background: var(--accent-2);
+  color: #fffaf2;
+  outline: none;
+}
+
 .hero-strip .logo-mark {
   margin-bottom: 0;
 }
@@ -403,9 +419,12 @@ button {
 
 .topbar {
   justify-content: space-between;
-  padding: 8px 12px;
+  gap: 14px;
+  padding: 9px 12px;
   border-bottom: 1px solid var(--line);
-  background: rgba(255, 253, 247, 0.74);
+  background:
+    linear-gradient(90deg, rgba(255, 253, 247, 0.8), rgba(239, 232, 216, 0.7)),
+    repeating-linear-gradient(90deg, transparent 0 19px, rgba(16, 24, 32, 0.035) 19px 20px);
 }
 
 .notice-bar {
@@ -503,6 +522,70 @@ button {
 .icon-button:hover,
 .select-control:hover {
   border-color: rgba(16, 24, 32, 0.35);
+}
+
+.command-ribbon {
+  gap: 6px;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 5px;
+  border: 1px solid rgba(16, 24, 32, 0.18);
+  border-radius: 10px;
+  background:
+    linear-gradient(135deg, rgba(16, 24, 32, 0.96), rgba(33, 49, 55, 0.96)),
+    linear-gradient(90deg, rgba(40, 123, 120, 0.18), rgba(196, 77, 45, 0.16));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 10px 26px rgba(16, 24, 32, 0.12);
+}
+
+.command-ribbon .select-control,
+.command-ribbon .icon-button,
+.command-ribbon .text-button {
+  min-height: 32px;
+  border-color: rgba(255, 250, 242, 0.16);
+  border-radius: 7px;
+  background: rgba(255, 250, 242, 0.96);
+  color: var(--ink);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.command-ribbon .select-control {
+  max-width: 150px;
+  background: rgba(255, 250, 242, 0.9);
+  font-weight: 800;
+}
+
+.command-ribbon .icon-button {
+  width: 32px;
+  padding: 5px;
+}
+
+.command-ribbon .text-button {
+  gap: 6px;
+  padding: 5px 10px;
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.command-ribbon .text-button.primary {
+  border-color: rgba(255, 250, 242, 0.18);
+  background: var(--accent);
+  color: #fffaf2;
+}
+
+.command-ribbon .focus-toggle {
+  background: var(--accent-2);
+  color: #fffaf2;
+}
+
+.command-ribbon .select-control:hover,
+.command-ribbon .icon-button:hover,
+.command-ribbon .text-button:hover,
+.command-ribbon .select-control:focus-visible,
+.command-ribbon .icon-button:focus-visible,
+.command-ribbon .text-button:focus-visible {
+  border-color: rgba(255, 250, 242, 0.72);
+  transform: translateY(-1px);
+  outline: none;
 }
 
 .editor-grid {
