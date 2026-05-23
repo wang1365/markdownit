@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#f8f4ea"/>
+  <path d="M0 530 C190 420 360 620 540 500 S860 360 1200 440 V630 H0Z" fill="#287b78" opacity=".32"/>
+  <path d="M0 130 C210 20 390 210 610 110 S900 10 1200 80 V0 H0Z" fill="#c44d2d" opacity=".22"/>
+  <rect x="90" y="90" width="92" height="92" rx="20" fill="#101820"/>
+  <rect x="108" y="102" width="56" height="64" rx="9" fill="#fffdf7"/>
+  <path d="M152 102v17h12" fill="none" stroke="#c44d2d" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M117 150V121l10 15 10-15v29" fill="none" stroke="#101820" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M149 124v27m-11-11 11 11 11-11" fill="none" stroke="#287b78" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="210" y="160" fill="#101820" font-family="Arial, sans-serif" font-size="78" font-weight="800">Markdownit Online</text>
+  <text x="92" y="290" fill="#43515c" font-family="Arial, sans-serif" font-size="36">Markdown editor with Word and PDF export</text>
+  <rect x="92" y="360" width="430" height="56" rx="8" fill="#101820"/>
+  <text x="120" y="398" fill="#fff8e7" font-family="Arial, sans-serif" font-size="24" font-weight="700">Private browser writing studio</text>
+</svg>
