@@ -324,41 +324,41 @@ export function MarkdownStudio({ locale, dictionary }: Props) {
               <section className="pane editor-pane">
                 <div className="pane-header">
                   <span>{dictionary.app.editor}</span>
-                  <button className="pane-tool" onClick={() => setFocusMode((value) => !value)} title={dictionary.app.focus}>
-                    {focusMode ? <PanelRightOpen size={15} /> : <Focus size={15} />}
-                  </button>
-                </div>
-                <div className="markdown-toolbar" aria-label="Markdown formatting toolbar">
-                  <button type="button" onClick={() => applyMarkdownTool("h1")} title="Heading 1">
-                    <Heading1 size={16} />
-                  </button>
-                  <button type="button" onClick={() => applyMarkdownTool("h2")} title="Heading 2">
-                    <Heading2 size={16} />
-                  </button>
-                  <button type="button" onClick={() => applyMarkdownTool("bold")} title="Bold">
-                    <Bold size={16} />
-                  </button>
-                  <button type="button" onClick={() => applyMarkdownTool("italic")} title="Italic">
-                    <Italic size={16} />
-                  </button>
-                  <button type="button" onClick={() => applyMarkdownTool("quote")} title="Quote">
-                    <Quote size={16} />
-                  </button>
-                  <button type="button" onClick={() => applyMarkdownTool("bullet")} title="Bulleted list">
-                    <List size={16} />
-                  </button>
-                  <button type="button" onClick={() => applyMarkdownTool("ordered")} title="Numbered list">
-                    <ListOrdered size={16} />
-                  </button>
-                  <button type="button" onClick={() => applyMarkdownTool("link")} title="Link">
-                    <Link size={16} />
-                  </button>
-                  <button type="button" onClick={() => applyMarkdownTool("code")} title="Code block">
-                    <Code2 size={16} />
-                  </button>
-                  <button type="button" onClick={() => applyMarkdownTool("table")} title="Table">
-                    <Table2 size={16} />
-                  </button>
+                  <div className="markdown-toolbar" aria-label="Markdown formatting toolbar">
+                    <button type="button" onClick={() => applyMarkdownTool("h1")} title="Heading 1">
+                      <Heading1 size={15} />
+                    </button>
+                    <button type="button" onClick={() => applyMarkdownTool("h2")} title="Heading 2">
+                      <Heading2 size={15} />
+                    </button>
+                    <button type="button" onClick={() => applyMarkdownTool("bold")} title="Bold">
+                      <Bold size={15} />
+                    </button>
+                    <button type="button" onClick={() => applyMarkdownTool("italic")} title="Italic">
+                      <Italic size={15} />
+                    </button>
+                    <button type="button" onClick={() => applyMarkdownTool("quote")} title="Quote">
+                      <Quote size={15} />
+                    </button>
+                    <button type="button" onClick={() => applyMarkdownTool("bullet")} title="Bulleted list">
+                      <List size={15} />
+                    </button>
+                    <button type="button" onClick={() => applyMarkdownTool("ordered")} title="Numbered list">
+                      <ListOrdered size={15} />
+                    </button>
+                    <button type="button" onClick={() => applyMarkdownTool("link")} title="Link">
+                      <Link size={15} />
+                    </button>
+                    <button type="button" onClick={() => applyMarkdownTool("code")} title="Code block">
+                      <Code2 size={15} />
+                    </button>
+                    <button type="button" onClick={() => applyMarkdownTool("table")} title="Table">
+                      <Table2 size={15} />
+                    </button>
+                    <button className="pane-tool" onClick={() => setFocusMode((value) => !value)} title={dictionary.app.focus}>
+                      {focusMode ? <PanelRightOpen size={15} /> : <Focus size={15} />}
+                    </button>
+                  </div>
                 </div>
                 <div className="editor-host">
                   <CodeMirror

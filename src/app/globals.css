@@ -487,14 +487,10 @@ button {
   grid-template-rows: auto minmax(0, 1fr);
 }
 
-.editor-pane {
-  grid-template-rows: auto auto minmax(0, 1fr);
-}
-
 .pane-tool {
   display: inline-grid;
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   place-items: center;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -508,19 +504,19 @@ button {
 
 .markdown-toolbar {
   display: flex;
-  gap: 6px;
+  max-width: min(58vw, 420px);
+  gap: 5px;
   align-items: center;
   overflow-x: auto;
-  border-bottom: 1px solid var(--line);
-  background: color-mix(in srgb, var(--paper-strong) 86%, transparent);
-  padding: 7px 10px;
+  background: transparent;
+  padding: 0;
 }
 
 .markdown-toolbar button {
   display: inline-grid;
-  width: 32px;
-  height: 32px;
-  flex: 0 0 32px;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
   place-items: center;
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -540,6 +536,7 @@ button {
   min-height: 38px;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   padding: 8px 12px;
   border-bottom: 1px solid var(--line);
   color: var(--ink-soft);
@@ -561,7 +558,7 @@ button {
 }
 
 .editor-host .cm-content {
-  min-height: calc(100vh - 230px);
+  min-height: calc(100vh - 190px);
   padding: 24px;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 15px;
@@ -623,7 +620,7 @@ button {
 }
 
 .focus-mode .editor-host .cm-content {
-  min-height: calc(100vh - 78px);
+  min-height: calc(100vh - 39px);
 }
 
 .preview-document code {
