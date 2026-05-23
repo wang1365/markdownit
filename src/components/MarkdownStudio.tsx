@@ -10,7 +10,6 @@ import {
   Bold,
   Code2,
   Copy,
-  ExternalLink,
   FileDown,
   FilePlus2,
   Heading1,
@@ -23,6 +22,7 @@ import {
   Link,
   List,
   ListOrdered,
+  Mail,
   Maximize2,
   Minimize2,
   PanelLeftClose,
@@ -37,7 +37,7 @@ import { localeLabels, locales, type Locale } from "@/i18n/config";
 import type { StoredDocument } from "@/types/document";
 import { countWords, markdownToHtml } from "@/lib/markdown";
 import { deleteDocument, listDocuments, saveDocument } from "@/lib/storage";
-import { downloadMarkdown, exportGoogleDocs, exportNotion, exportPdf, exportWord } from "@/lib/exporters";
+import { downloadMarkdown, exportGoogleDocs, exportPdf, exportWord } from "@/lib/exporters";
 import { Logo } from "./Logo";
 
 const CodeMirror = dynamic(() => import("@uiw/react-codemirror"), { ssr: false });
@@ -68,6 +68,7 @@ const toolShortcuts: Record<MarkdownTool, string> = {
 };
 
 const focusShortcut = "Ctrl/Cmd+Alt+F";
+const feedbackEmail = "wangxiaochuan01@163.com";
 
 type Props = {
   locale: Locale;
@@ -204,10 +205,21 @@ export function MarkdownStudio({ locale, dictionary }: Props) {
     }
   };
 
-  const sendToNotion = async () => {
-    if (!activeDocument) return;
-    await exportNotion(activeDocument.markdown);
-    setNotice(dictionary.app.copiedNotion);
+  const contactAuthor = () => {
+    const subject = encodeURIComponent("Markdownit Online feedback");
+    const body = encodeURIComponent(
+      [
+        "Hi,",
+        "",
+        "I have feedback about Markdownit Online:",
+        "",
+        `Document: ${activeDocument?.title ?? "Untitled"}`,
+        `Page: ${window.location.href}`,
+        "",
+        "Feedback:"
+      ].join("\n")
+    );
+    window.location.href = `mailto:${feedbackEmail}?subject=${subject}&body=${body}`;
   };
 
   const applyMarkdownTool = useCallback(
@@ -380,7 +392,7 @@ export function MarkdownStudio({ locale, dictionary }: Props) {
                 {dictionary.app.exportMd}
               </button>
               <button className="text-button" onClick={() => activeDocument && exportWord(activeDocument.title, activeDocument.markdown)}>
-                <FileDown size={17} />
+                <WordIcon size={17} />
                 {dictionary.app.exportWord}
               </button>
               <button className="text-button primary" onClick={exportPdf}>
@@ -388,12 +400,11 @@ export function MarkdownStudio({ locale, dictionary }: Props) {
                 {dictionary.app.exportPdf}
               </button>
               <button className="text-button" onClick={sendToGoogleDocs}>
-                <ExternalLink size={17} />
+                <GoogleIcon size={17} />
                 {dictionary.app.exportGoogle}
               </button>
-              <button className="text-button" onClick={sendToNotion}>
-                <ExternalLink size={17} />
-                {dictionary.app.exportNotion}
+              <button className="icon-button" onClick={contactAuthor} title={getFeedbackLabel(locale)} aria-label={getFeedbackLabel(locale)}>
+                <Mail size={17} />
               </button>
             </div>
           </div>
@@ -514,6 +525,43 @@ function documentSummary(markdown: string) {
     .trim();
 
   return summary ? summary.slice(0, 80) : "Empty document";
+}
+
+function getFeedbackLabel(locale: Locale) {
+  const labels: Record<Locale, string> = {
+    en: "Contact author",
+    fr: "Contacter l'auteur",
+    de: "Autor kontaktieren",
+    ja: "作者に連絡",
+    ko: "작성자에게 문의",
+    "zh-CN": "联系作者反馈",
+    "zh-TW": "聯繫作者回饋",
+    ar: "تواصل مع المؤلف"
+  };
+
+  return labels[locale];
+}
+
+function GoogleIcon({ size = 17 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path fill="#4285f4" d="M21.6 12.23c0-.74-.07-1.45-.2-2.13H12v4.03h5.38a4.6 4.6 0 0 1-1.99 3.02v2.51h3.23c1.89-1.74 2.98-4.3 2.98-7.43Z" />
+      <path fill="#34a853" d="M12 22c2.7 0 4.96-.89 6.62-2.34l-3.23-2.51c-.9.6-2.04.95-3.39.95-2.6 0-4.81-1.76-5.6-4.12H3.06v2.59A10 10 0 0 0 12 22Z" />
+      <path fill="#fbbc05" d="M6.4 13.98A6.01 6.01 0 0 1 6.08 12c0-.69.12-1.35.32-1.98V7.43H3.06A10 10 0 0 0 2 12c0 1.61.39 3.13 1.06 4.57l3.34-2.59Z" />
+      <path fill="#ea4335" d="M12 5.9c1.47 0 2.79.51 3.83 1.5l2.86-2.86C16.96 2.92 14.7 2 12 2a10 10 0 0 0-8.94 5.43l3.34 2.59C7.19 7.66 9.4 5.9 12 5.9Z" />
+    </svg>
+  );
+}
+
+function WordIcon({ size = 17 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect width="18" height="20" x="4" y="2" rx="2.5" fill="#185abd" />
+      <path fill="#41a5ee" d="M8 2h11.5A2.5 2.5 0 0 1 22 4.5V8H8V2Z" opacity=".9" />
+      <rect width="12" height="12" x="2" y="7" rx="2" fill="#103f91" />
+      <path fill="#fff" d="m5.2 10 1.1 5 .95-5h1.5l.97 5 1.08-5h1.4l-1.65 7H8.9l-.9-4.65L7.1 17H5.45L3.8 10h1.4Z" />
+    </svg>
+  );
 }
 
 type MarkdownEdit = {
