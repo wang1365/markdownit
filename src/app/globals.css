@@ -419,8 +419,8 @@ button {
 
 .topbar {
   justify-content: space-between;
-  gap: 14px;
-  padding: 9px 12px;
+  gap: 10px;
+  padding: 5px 10px;
   border-bottom: 1px solid var(--line);
   background:
     linear-gradient(90deg, rgba(255, 253, 247, 0.8), rgba(239, 232, 216, 0.7)),
@@ -525,12 +525,12 @@ button {
 }
 
 .command-ribbon {
-  gap: 6px;
+  gap: 5px;
   max-width: 100%;
   overflow-x: auto;
-  padding: 5px;
+  padding: 4px;
   border: 1px solid rgba(16, 24, 32, 0.18);
-  border-radius: 10px;
+  border-radius: 8px;
   background:
     linear-gradient(135deg, rgba(16, 24, 32, 0.96), rgba(33, 49, 55, 0.96)),
     linear-gradient(90deg, rgba(40, 123, 120, 0.18), rgba(196, 77, 45, 0.16));
@@ -540,9 +540,9 @@ button {
 .command-ribbon .select-control,
 .command-ribbon .icon-button,
 .command-ribbon .text-button {
-  min-height: 32px;
+  min-height: 28px;
   border-color: rgba(255, 250, 242, 0.16);
-  border-radius: 7px;
+  border-radius: 6px;
   background: rgba(255, 250, 242, 0.96);
   color: var(--ink);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
@@ -551,18 +551,21 @@ button {
 .command-ribbon .select-control {
   max-width: 150px;
   background: rgba(255, 250, 242, 0.9);
+  padding: 3px 8px;
+  font-size: 0.86rem;
   font-weight: 800;
 }
 
 .command-ribbon .icon-button {
-  width: 32px;
-  padding: 5px;
+  width: 28px;
+  min-height: 28px;
+  padding: 4px;
 }
 
 .command-ribbon .text-button {
-  gap: 6px;
-  padding: 5px 10px;
-  font-size: 0.92rem;
+  gap: 5px;
+  padding: 3px 8px;
+  font-size: 0.86rem;
   white-space: nowrap;
 }
 
