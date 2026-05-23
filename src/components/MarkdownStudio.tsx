@@ -183,10 +183,21 @@ export function MarkdownStudio({ locale, dictionary }: Props) {
 
           <div className="section-label">{dictionary.app.documents}</div>
           <div className="document-list">
-            {documents.map((item) => (
-              <button key={item.id} className={`doc-tab ${item.id === activeId ? "active" : ""}`} onClick={() => setActiveId(item.id)}>
+            {documents.map((item, index) => (
+              <button
+                key={item.id}
+                className={`doc-tab ${item.id === activeId ? "active" : ""}`}
+                data-index={index + 1}
+                title={`${index + 1}. ${item.title}\n${new Date(item.updatedAt).toLocaleString(locale)}\n${documentSummary(item.markdown)}`}
+                onClick={() => setActiveId(item.id)}
+              >
                 <strong>{item.title}</strong>
                 <span>{new Date(item.updatedAt).toLocaleDateString(locale)}</span>
+                <em className="doc-flyout">
+                  <b>{index + 1}. {item.title}</b>
+                  <small>{new Date(item.updatedAt).toLocaleString(locale)}</small>
+                  <small>{documentSummary(item.markdown)}</small>
+                </em>
               </button>
             ))}
           </div>
@@ -329,4 +340,14 @@ function getSlogan(locale: Locale, fallback: string) {
   };
 
   return slogans[locale] ?? fallback;
+}
+
+function documentSummary(markdown: string) {
+  const summary = markdown
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/[#>*_\-[\]()`]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return summary ? summary.slice(0, 80) : "Empty document";
 }

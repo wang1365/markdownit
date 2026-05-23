@@ -204,6 +204,7 @@ button {
 .rail-collapsed .section-label,
 .rail-collapsed .doc-tab span,
 .rail-collapsed .doc-tab strong,
+.doc-flyout,
 .rail-collapsed .rail-actions .text-button {
   display: none;
 }
@@ -233,12 +234,50 @@ button {
 }
 
 .rail-collapsed .doc-tab::before {
-  content: "";
+  content: attr(data-index);
   position: absolute;
-  inset: 12px;
+  inset: 8px;
+  display: grid;
+  place-items: center;
   border: 2px solid var(--accent-2);
   border-radius: 4px;
   background: var(--paper-strong);
+  color: var(--accent-2);
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.rail-collapsed .doc-tab:hover .doc-flyout,
+.rail-collapsed .doc-tab:focus-visible .doc-flyout {
+  position: absolute;
+  inset-inline-start: calc(100% + 10px);
+  top: 0;
+  z-index: 20;
+  display: grid;
+  width: 240px;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper-strong);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  padding: 10px 12px;
+  text-align: start;
+  text-transform: none;
+}
+
+.doc-flyout b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-style: normal;
+}
+
+.doc-flyout small {
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  font-style: normal;
+  line-height: 1.35;
 }
 
 .rail-actions,
