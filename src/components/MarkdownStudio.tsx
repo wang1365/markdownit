@@ -4,7 +4,31 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { markdown } from "@codemirror/lang-markdown";
 import { oneDark } from "@codemirror/theme-one-dark";
-import { Copy, ExternalLink, FileDown, FilePlus2, Focus, Import, Languages, PanelLeftClose, PanelLeftOpen, PanelRightOpen, Save, Trash2 } from "lucide-react";
+import type { EditorView } from "@codemirror/view";
+import {
+  Bold,
+  Code2,
+  Copy,
+  ExternalLink,
+  FileDown,
+  FilePlus2,
+  Focus,
+  Heading1,
+  Heading2,
+  Import,
+  Italic,
+  Languages,
+  Link,
+  List,
+  ListOrdered,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightOpen,
+  Quote,
+  Save,
+  Table2,
+  Trash2
+} from "lucide-react";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { localeLabels, locales, type Locale } from "@/i18n/config";
 import type { StoredDocument } from "@/types/document";
@@ -37,6 +61,7 @@ export function MarkdownStudio({ locale, dictionary }: Props) {
   const [railCollapsed, setRailCollapsed] = useState(false);
   const [theme, setTheme] = useState<ThemeId>("atelier");
   const [notice, setNotice] = useState("");
+  const [editorView, setEditorView] = useState<EditorView | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const activeDocument = documents.find((item) => item.id === activeId) ?? null;
@@ -144,6 +169,29 @@ export function MarkdownStudio({ locale, dictionary }: Props) {
     if (!activeDocument) return;
     await exportNotion(activeDocument.markdown);
     setNotice(dictionary.app.copiedNotion);
+  };
+
+  const applyMarkdownTool = (tool: MarkdownTool) => {
+    if (!activeDocument) return;
+
+    const view = editorView;
+    const markdown = activeDocument.markdown;
+    const selection = view?.state.selection.main;
+    const from = selection?.from ?? markdown.length;
+    const to = selection?.to ?? markdown.length;
+    const selected = markdown.slice(from, to);
+    const edit = createMarkdownEdit(tool, markdown, from, to, selected);
+
+    if (view) {
+      view.dispatch({
+        changes: { from: edit.from, to: edit.to, insert: edit.insert },
+        selection: { anchor: edit.cursor }
+      });
+      view.focus();
+      return;
+    }
+
+    updateActive({ markdown: `${markdown.slice(0, edit.from)}${edit.insert}${markdown.slice(edit.to)}` });
   };
 
   return (
@@ -280,11 +328,44 @@ export function MarkdownStudio({ locale, dictionary }: Props) {
                     {focusMode ? <PanelRightOpen size={15} /> : <Focus size={15} />}
                   </button>
                 </div>
+                <div className="markdown-toolbar" aria-label="Markdown formatting toolbar">
+                  <button type="button" onClick={() => applyMarkdownTool("h1")} title="Heading 1">
+                    <Heading1 size={16} />
+                  </button>
+                  <button type="button" onClick={() => applyMarkdownTool("h2")} title="Heading 2">
+                    <Heading2 size={16} />
+                  </button>
+                  <button type="button" onClick={() => applyMarkdownTool("bold")} title="Bold">
+                    <Bold size={16} />
+                  </button>
+                  <button type="button" onClick={() => applyMarkdownTool("italic")} title="Italic">
+                    <Italic size={16} />
+                  </button>
+                  <button type="button" onClick={() => applyMarkdownTool("quote")} title="Quote">
+                    <Quote size={16} />
+                  </button>
+                  <button type="button" onClick={() => applyMarkdownTool("bullet")} title="Bulleted list">
+                    <List size={16} />
+                  </button>
+                  <button type="button" onClick={() => applyMarkdownTool("ordered")} title="Numbered list">
+                    <ListOrdered size={16} />
+                  </button>
+                  <button type="button" onClick={() => applyMarkdownTool("link")} title="Link">
+                    <Link size={16} />
+                  </button>
+                  <button type="button" onClick={() => applyMarkdownTool("code")} title="Code block">
+                    <Code2 size={16} />
+                  </button>
+                  <button type="button" onClick={() => applyMarkdownTool("table")} title="Table">
+                    <Table2 size={16} />
+                  </button>
+                </div>
                 <div className="editor-host">
                   <CodeMirror
                     value={activeDocument.markdown}
                     extensions={theme === "night" || theme === "contrast" ? [markdown(), oneDark] : [markdown()]}
                     basicSetup={{ lineNumbers: true, foldGutter: true }}
+                    onCreateEditor={(view) => setEditorView(view)}
                     onChange={(value) => updateActive({ markdown: value })}
                   />
                 </div>
@@ -350,4 +431,103 @@ function documentSummary(markdown: string) {
     .trim();
 
   return summary ? summary.slice(0, 80) : "Empty document";
+}
+
+type MarkdownTool = "h1" | "h2" | "bold" | "italic" | "quote" | "bullet" | "ordered" | "link" | "code" | "table";
+
+type MarkdownEdit = {
+  from: number;
+  to: number;
+  insert: string;
+  cursor: number;
+};
+
+function createMarkdownEdit(tool: MarkdownTool, markdown: string, from: number, to: number, selected: string): MarkdownEdit {
+  if (tool === "bold") return wrapSelection(from, to, selected, "**", "**", "bold text");
+  if (tool === "italic") return wrapSelection(from, to, selected, "*", "*", "italic text");
+  if (tool === "link") return linkSelection(from, to, selected);
+  if (tool === "code") return blockTemplate(from, to, selected, "```\n", "\n```", "code");
+  if (tool === "table") return insertTemplate(from, to, "| Column | Value |\n| --- | --- |\n| Item | Detail |", 2);
+
+  const lineRange = getLineRange(markdown, from, to);
+  const block = markdown.slice(lineRange.from, lineRange.to);
+
+  if (tool === "h1") return replaceLines(lineRange, block, (line) => setHeading(line, "#"));
+  if (tool === "h2") return replaceLines(lineRange, block, (line) => setHeading(line, "##"));
+  if (tool === "quote") return replaceLines(lineRange, block, (line) => togglePrefix(line, "> "));
+  if (tool === "bullet") return replaceLines(lineRange, block, (line) => togglePrefix(line, "- "));
+  return replaceLines(lineRange, block, (line, index) => setOrderedPrefix(line, index + 1));
+}
+
+function wrapSelection(from: number, to: number, selected: string, before: string, after: string, placeholder: string): MarkdownEdit {
+  const content = selected || placeholder;
+  return {
+    from,
+    to,
+    insert: `${before}${content}${after}`,
+    cursor: from + before.length + content.length
+  };
+}
+
+function linkSelection(from: number, to: number, selected: string): MarkdownEdit {
+  const label = selected || "link text";
+  const insert = `[${label}](https://example.com)`;
+  return {
+    from,
+    to,
+    insert,
+    cursor: from + insert.length - 1
+  };
+}
+
+function blockTemplate(from: number, to: number, selected: string, before: string, after: string, placeholder: string): MarkdownEdit {
+  const content = selected || placeholder;
+  return {
+    from,
+    to,
+    insert: `${before}${content}${after}`,
+    cursor: from + before.length + content.length
+  };
+}
+
+function insertTemplate(from: number, to: number, template: string, focusLine: number): MarkdownEdit {
+  const lines = template.split("\n").slice(0, focusLine).join("\n");
+  return {
+    from,
+    to,
+    insert: template,
+    cursor: from + lines.length
+  };
+}
+
+function getLineRange(markdown: string, from: number, to: number) {
+  const start = markdown.lastIndexOf("\n", Math.max(0, from - 1)) + 1;
+  const nextBreak = markdown.indexOf("\n", to);
+  return {
+    from: start,
+    to: nextBreak === -1 ? markdown.length : nextBreak
+  };
+}
+
+function replaceLines(lineRange: { from: number; to: number }, block: string, transform: (line: string, index: number) => string): MarkdownEdit {
+  const lines = block ? block.split("\n") : [""];
+  const next = lines.map((line, index) => transform(line || "Text", index)).join("\n");
+  return {
+    from: lineRange.from,
+    to: lineRange.to,
+    insert: next,
+    cursor: lineRange.from + next.length
+  };
+}
+
+function setHeading(line: string, marker: "#" | "##") {
+  return `${marker} ${line.replace(/^#{1,6}\s+/, "")}`;
+}
+
+function togglePrefix(line: string, prefix: string) {
+  return line.startsWith(prefix) ? line.slice(prefix.length) : `${prefix}${line}`;
+}
+
+function setOrderedPrefix(line: string, index: number) {
+  return `${index}. ${line.replace(/^\d+\.\s+/, "").replace(/^- /, "")}`;
 }

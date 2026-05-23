@@ -487,6 +487,10 @@ button {
   grid-template-rows: auto minmax(0, 1fr);
 }
 
+.editor-pane {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
 .pane-tool {
   display: inline-grid;
   width: 32px;
@@ -500,6 +504,35 @@ button {
 
 .editor-pane {
   border-inline-end: 1px solid var(--line);
+}
+
+.markdown-toolbar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--paper-strong) 86%, transparent);
+  padding: 7px 10px;
+}
+
+.markdown-toolbar button {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper-strong);
+  color: var(--ink);
+}
+
+.markdown-toolbar button:hover,
+.markdown-toolbar button:focus-visible {
+  border-color: var(--accent-2);
+  color: var(--accent-2);
+  outline: none;
 }
 
 .pane-header {
@@ -528,7 +561,7 @@ button {
 }
 
 .editor-host .cm-content {
-  min-height: calc(100vh - 190px);
+  min-height: calc(100vh - 230px);
   padding: 24px;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 15px;
@@ -590,7 +623,7 @@ button {
 }
 
 .focus-mode .editor-host .cm-content {
-  min-height: calc(100vh - 39px);
+  min-height: calc(100vh - 78px);
 }
 
 .preview-document code {
